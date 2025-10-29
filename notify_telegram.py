@@ -56,7 +56,7 @@ def main():
         print("[notify_telegram] Your TELEGRAM_CHAT_ID looks invalid. Use numeric ID (e.g., 12345678 or -100...) or @channelusername.", file=sys.stderr)
 
     status = args.status.strip().upper()
-    badge = "SUCCESS" if status.startswith("S") else "FAILED"
+    badge = f"<b>{'✅ SUCCESS' if status.startswith('S') else '❌ FAILED'}</b>"
 
     tz = os.getenv("TZ", "Asia/Jakarta")
     try:
@@ -76,6 +76,12 @@ def main():
     lines.append("")  # spasi baris kosong
     if args.dashboard:
         lines.append(f"Dashboard: {args.dashboard}")
+
+    # IMPORTANT: buat variabel `text`
+    text = "\n".join(lines)
+
+    # Kirim
+    res = send_message(token, chat_id, text, debug=debug)
 
     # Masked debug header
     if debug:
