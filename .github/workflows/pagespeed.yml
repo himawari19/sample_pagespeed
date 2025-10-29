@@ -1,0 +1,155 @@
+name: Build & Deploy PSI Dashboard
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 23 * * *' # 06:00 WIB
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # === Tambahan: total durasi mulai dihitung sejak sini ===
+      - name: Set workflow start time
+        run: echo "START_TS=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Ambil history lama dari gh-pages supaya tidak hilang
+      - name: Checkout gh-pages (for history)
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+          persist-credentials: false
+        continue-on-error: true
+
+      - name: Restore history.json & history/ from gh-pages
+        run: |
+          set -e
+          SRC="gh-pages"
+          DEST="dashboard"
+          mkdir -p "$DEST"
+          if [ -f "$SRC/history.json" ]; then cp -f "$SRC/history.json" "$DEST/"; fi
+          if [ -d "$SRC/history" ]; then rsync -a "$SRC/history/" "$DEST/history/"; fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run PSI Dashboard Script
+        env:
+          PSI_API_KEY: ${{ secrets.PSI_API_KEY }}
+          LOCALE: 'en'
+          LOOP_UNTIL_SUCCESS: '1'
+          MAX_MINUTES: '55'
+          MAX_ATTEMPTS: '0'
+          RETRY_BASE_SECONDS: '3'
+          RETRY_MAX_SECONDS: '120'
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python psi_csv_dashboard.py \
+            --csv urls.csv \
+            --out-csv dashboard/psi_results.csv \
+            --out-json dashboard/psi_results.json \
+            --out-html dashboard/index.html \
+            --sleep 1.0
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dashboard
+          enable_jekyll: false
+
+      # === Tambahan: set END_TS selalu jalan (sukses/gagal) ===
+      - name: Set workflow end time
+        if: always()
+        run: echo "END_TS=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Kirim Notif Telegram (SUCCESS)
+        if: success()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m notify_telegram --status SUCCESS
+
+      - name: Kirim Notif Telegram (FAILED)
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python -m notify_telegram --status FAILED
+
+      # === Email Fungtionality Added Below ===
+      - name: Send Email Report (SUCCESS)
+        if: success()
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_SUBJECT_PREFIX: ${{ secrets.EMAIL_SUBJECT_PREFIX }}
+          TZ: Asia/Jakarta
+        run: |
+          # Hitung durasi (detik) dari START_TS dan END_TS
+          DUR=$(python - <<'PY'
+          import os
+          s = int(os.getenv("START_TS","0") or 0)
+          e = int(os.getenv("END_TS","0") or 0)
+          d = max(e - s, 0)
+          print(f"{d:.2f}")
+          PY
+          )
+          echo "Run duration: $DUR seconds"
+          python notify_email.py \
+            --site "https://www.generasimaju.co.id" \
+            --status "Success" \
+            --duration "$DUR" \
+            --report "dashboard/index.html"
+
+      # === [BARU] Kirim Email Report (FAILED) – setelah Telegram gagal ===
+      - name: Send Email Report (FAILED)
+        if: failure()
+        env:
+        SMTP_HOST: ${{ secrets.SMTP_HOST }}
+        SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        SMTP_USER: ${{ secrets.SMTP_USER }}
+        SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        EMAIL_SUBJECT_PREFIX: ${{ secrets.EMAIL_SUBJECT_PREFIX }}
+        TZ: Asia/Jakarta
+        run: |
+          DUR=$(python - <<'PY'
+          import os
+          s = int(os.getenv("START_TS","0") or 0)
+          e = int(os.getenv("END_TS","0") or 0)
+          d = max(e - s, 0)
+          print(f"{d:.2f}")
+          PY
+          )
+          echo "Run duration: $DUR seconds"
+          python notify_email.py \
+            --site "https://www.generasimaju.co.id" \
+            --status "Fail" \
+            --duration "$DUR" \
+            --report "dashboard/index.html"

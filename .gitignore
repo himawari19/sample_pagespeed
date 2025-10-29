@@ -1,0 +1,52 @@
+# --- Python general ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.build/
+dist/
+*.log
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Environment & secrets ---
+.env
+.env.*
+!.env.example  # contoh tetap commit
+
+# --- Cache / reports ---
+*.tmp
+*.bak
+*.cache/
+*.coverage
+coverage.xml
+.pytest_cache/
+reports/
+allure-results/
+allure-report/
+
+# --- Node/npm if any (optional) ---
+node_modules/
+npm-debug.log*
+
+# Build artifacts (dibuat saat CI)
+dashboard/
+psi_results.csv
+psi_results.json
