@@ -99,6 +99,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: Asia/Jakarta
+          DEBUG_TELEGRAM: "1"
         run: |
           python notify_telegram.py --status SUCCESS --site "https://www.generasimaju.co.id"
 
