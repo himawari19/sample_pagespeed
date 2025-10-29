@@ -99,9 +99,10 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: Asia/Jakarta
-          DEBUG_TELEGRAM: "1"
         run: |
-          python notify_telegram.py --status SUCCESS --site "https://www.generasimaju.co.id"
+          python notify_telegram.py --status SUCCESS \
+            --site "https://www.generasimaju.co.id" \
+            --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
 
       - name: Kirim Notif Telegram (FAILED)
         if: failure()
@@ -110,7 +111,9 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TZ: Asia/Jakarta
         run: |
-          python notify_telegram.py --status FAILED --site "https://www.generasimaju.co.id"
+          python notify_telegram.py --status FAILED \
+            --site "https://www.generasimaju.co.id" \
+            --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
 
       - name: Send Email Report (SUCCESS)
         if: success()
@@ -137,7 +140,8 @@ jobs:
             --site "https://www.generasimaju.co.id" \
             --status "Success" \
             --duration "$DUR" \
-            --report "dashboard/index.html"
+            --report "dashboard/index.html" \
+            --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
 
       - name: Send Email Report (FAILED)
         if: failure()
@@ -164,4 +168,5 @@ jobs:
             --site "https://www.generasimaju.co.id" \
             --status "Fail" \
             --duration "$DUR" \
-            --report "dashboard/index.html"
+            --report "dashboard/index.html" \
+            --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
