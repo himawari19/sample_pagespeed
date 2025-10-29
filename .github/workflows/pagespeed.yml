@@ -84,17 +84,7 @@ jobs:
       # --- Telegram notifications ---
       - name: Kirim Notif Telegram (SUCCESS)
         if: success()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TZ: Asia/Jakarta
-        run: |
-          python notify_telegram.py --status SUCCESS 
-          --site "https://www.generasimaju.co.id" 
-          --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
-
-      - name: Kirim Notif Telegram (SUCCESS)
-        if: success()
+        shell: bash
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -106,6 +96,7 @@ jobs:
 
       - name: Kirim Notif Telegram (FAILED)
         if: failure()
+        shell: bash
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -117,6 +108,7 @@ jobs:
 
       - name: Send Email Report (SUCCESS)
         if: success()
+        shell: bash
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
@@ -145,6 +137,7 @@ jobs:
 
       - name: Send Email Report (FAILED)
         if: failure()
+        shell: bash
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
