@@ -40,7 +40,7 @@ def send_message(token: str, chat_id: str, text: str, parse_mode: str = "HTML", 
 def main():
     parser = argparse.ArgumentParser(description="Send a Telegram notification for PSI workflow.")
     parser.add_argument("--status", required=True, help="SUCCESS or FAILED")
-    parser.add_argument("--site", default="https://www.generasimaju.co.id")
+    parser.add_argument("--site", default="https://www.nutriclub.co.id")
     parser.add_argument("--duration", default=None, help="Run duration in seconds")
     parser.add_argument("--dashboard", default=None, help="Dashboard URL to include")
     parser.add_argument("--extra", default=None, help="Extra note to append")
@@ -56,7 +56,7 @@ def main():
         print("[notify_telegram] Your TELEGRAM_CHAT_ID looks invalid. Use numeric ID (e.g., 12345678 or -100...) or @channelusername.", file=sys.stderr)
 
     status = args.status.strip().upper()
-    badge = "✅ SUCCESS" if status.startswith("S") else "❌ FAILED"
+    badge = "SUCCESS" if status.startswith("S") else "FAILED"
 
     tz = os.getenv("TZ", "Asia/Jakarta")
     try:
@@ -67,19 +67,15 @@ def main():
         from datetime import datetime, timezone
         now_str = datetime.now(timezone.utc).strftime("%d %b %Y | %H:%M UTC")
 
-    lines = [
-        "<b>PageSpeed Insight Report</b>",
-        f"Status: <b>{badge}</b>",
-        f"Site: <code>{args.site}</code>",
-    ]
-    if args.duration:
-        lines.append(f"Duration: <b>{args.duration} s</b>")
+    lines = []
+    lines.append(f"<b>PageSpeed Insight Report</b>")
+    lines.append(f"<b>Site: {args.site}</b>")
+    lines.append("")  # spasi baris kosong
     lines.append(f"Time: {now_str}")
+    lines.append(f"Status: {badge}")
+    lines.append("")  # spasi baris kosong
     if args.dashboard:
         lines.append(f"Dashboard: {args.dashboard}")
-    if args.extra:
-        lines.append(args.extra)
-    text = "\n".join(lines)
 
     # Masked debug header
     if debug:
