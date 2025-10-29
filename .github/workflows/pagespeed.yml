@@ -81,23 +81,31 @@ jobs:
         if: always()
         run: echo "END_TS=$(date +%s)" >> $GITHUB_ENV
 
+      # --- Telegram notifications ---
       - name: Kirim Notif Telegram (SUCCESS)
         if: success()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TZ: Asia/Jakarta
         run: |
-          python -m notify_telegram --status SUCCESS
+          python notify_telegram.py --status SUCCESS 
+          --site "https://www.generasimaju.co.id" 
+          --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
 
       - name: Kirim Notif Telegram (FAILED)
         if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TZ: Asia/Jakarta
         run: |
-          python -m notify_telegram --status FAILED
+          python notify_telegram.py 
+          --status FAILED 
+          --site "https://www.generasimaju.co.id" 
+          --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
 
-      # === Email Fungtionality Added Below ===
+      # --- Email notifications ---
       - name: Send Email Report (SUCCESS)
         if: success()
         env:
@@ -110,7 +118,6 @@ jobs:
           EMAIL_SUBJECT_PREFIX: ${{ secrets.EMAIL_SUBJECT_PREFIX }}
           TZ: Asia/Jakarta
         run: |
-          # Hitung durasi (detik) dari START_TS dan END_TS
           DUR=$(python - <<'PY'
           import os
           s = int(os.getenv("START_TS","0") or 0)
@@ -120,13 +127,13 @@ jobs:
           PY
           )
           echo "Run duration: $DUR seconds"
-          python notify_email.py \
-            --site "https://www.generasimaju.co.id" \
-            --status "Success" \
-            --duration "$DUR" \
-            --report "dashboard/index.html"
+          python notify_email.py
+          --site "https://www.generasimaju.co.id"
+          --status "Success"
+          --duration "$DUR"
+          --report "dashboard/index.html"
+          --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
 
-      # === [BARU] Kirim Email Report (FAILED) – setelah Telegram gagal ===
       - name: Send Email Report (FAILED)
         if: failure()
         env:
@@ -148,8 +155,8 @@ jobs:
           PY
           )
           echo "Run duration: $DUR seconds"
-          python notify_email.py \
-            --site "https://www.generasimaju.co.id" \
-            --status "Fail" \
-            --duration "$DUR" \
-            --report "dashboard/index.html"
+          python notify_email.py
+          --site "https://www.generasimaju.co.id"
+          --status "Fail"           --duration "$DUR" 
+          --report "dashboard/index.html"
+          --dashboard "https://maazway.github.io/pagespeed-monitor-nr"

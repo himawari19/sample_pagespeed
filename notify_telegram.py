@@ -1,64 +1,78 @@
 import os
-import requests
-from datetime import datetime, timezone, timedelta
 import argparse
-import time  # tambahan
+import json
+import sys
+import urllib.parse
+import urllib.request
 
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")  # single chat or channel id (@channelusername)
+def env(name, default=None, required=False):
+    v = os.getenv(name, default)
+    if required and (v is None or str(v).strip() == ""):
+        print(f"[notify_telegram] Missing required env: {name}", file=sys.stderr)
+        sys.exit(2)
+    return v
 
-def _post(text: str) -> bool:
-    if not BOT_TOKEN or not CHAT_ID:
-        return False
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
+def send_message(token: str, chat_id: str, text: str, parse_mode: str = "HTML"):
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    data = {
+        "chat_id": chat_id,
         "text": text,
-        "parse_mode": "HTML",
+        "parse_mode": parse_mode,
         "disable_web_page_preview": True,
     }
-    try:
-        r = requests.post(url, json=payload, timeout=20)
-        r.raise_for_status()
-        return True
-    except Exception:
-        return False
+    body = urllib.parse.urlencode(data).encode("utf-8")
+    req = urllib.request.Request(url, data=body)
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        return json.loads(resp.read().decode("utf-8"))
 
-# === tambahan
-def format_duration(seconds: int) -> str:
-    m, s = divmod(int(seconds), 60)
-    return f"{m}m {s}s" if m else f"{s}s"
-
-def notify_simple_report(status: str = "SUCCESS") -> bool:
-    """Kirim pesan ringkas hasil PageSpeed Nutriclub ke Telegram + durasi run."""
-    wib = timezone(timedelta(hours=7))
-    ts = datetime.now(wib).strftime("%d/%m/%Y %H:%M:%S WIB")
-
-    # === tambahan: ambil total durasi workflow dari env
-    start = float(os.getenv("START_TS", time.time()))
-    end = float(os.getenv("END_TS", time.time()))
-    duration = format_duration(end - start)
-
-    lines = [
-        "<b>Hasil Pengecekan PageSpeed Nutriclub</b>",
-        "",
-        f"Tanggal & Waktu: <b>{ts}</b>",
-        f"Status: <b>{status}</b>",
-        f"Durasi Run: <b>{duration}</b>",  # tambahan
-        "",
-        "Dashboard utama:",
-        "<a href=\"https://maazway.github.io/pagespeed-monitor-nr\">https://maazway.github.io/pagespeed-monitor-nr</a>",
-        "",
-        "History (json file):",
-        "<a href=\"https://maazway.github.io/pagespeed-monitor-nr/history.json\">https://maazway.github.io/pagespeed-monitor-nr/history.json</a>",
-    ]
-    return _post("\n".join(lines))
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--status", default="SUCCESS", help="Status laporan (SUCCESS/FAILED)")
+def main():
+    parser = argparse.ArgumentParser(description="Send a Telegram notification for PSI workflow.")
+    parser.add_argument("--status", required=True, help="SUCCESS or FAILED")
+    parser.add_argument("--site", default="https://www.generasimaju.co.id")
+    parser.add_argument("--duration", default=None, help="Run duration in seconds")
+    parser.add_argument("--dashboard", default=None, help="Dashboard URL to include")
+    parser.add_argument("--extra", default=None, help="Extra note to append")
     args = parser.parse_args()
 
-    notify_simple_report(
-        status=args.status,
-    )
+    token = env("TELEGRAM_BOT_TOKEN", required=True)
+    chat_id = env("TELEGRAM_CHAT_ID", required=True)
+
+    status = args.status.strip().upper()
+    if status in {"FAIL", "FAILED"}:
+        badge = "❌ FAILED"
+    else:
+        badge = "✅ SUCCESS"
+
+    tz = os.getenv("TZ", "Asia/Jakarta")
+    try:
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        now_str = datetime.now(ZoneInfo(tz)).strftime("%d %b %Y | %H:%M %Z")
+    except Exception:
+        from datetime import datetime, timezone
+        now_str = datetime.now(timezone.utc).strftime("%d %b %Y | %H:%M UTC")
+
+    lines = []
+    lines.append(f"<b>PageSpeed Insight Report</b>")
+    lines.append(f"Status: <b>{badge}</b>")
+    lines.append(f"Site: <code>{args.site}</code>")
+    if args.duration:
+        lines.append(f"Duration: <b>{args.duration} s</b>")
+    lines.append(f"Time: {now_str}")
+    if args.dashboard:
+        lines.append(f"Dashboard: {args.dashboard}")
+    if args.extra:
+        lines.append(args.extra)
+
+    text = "\n".join(lines)
+
+    res = send_message(token, chat_id, text)
+    ok = bool(res.get("ok"))
+    if not ok:
+        print(f"[notify_telegram] Telegram API error: {res}", file=sys.stderr)
+        sys.exit(1)
+    print("[notify_telegram] Sent.")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
