@@ -24,7 +24,7 @@ def build_subject(prefix: str, site: str, tzname: str):
             now = datetime.now(ZoneInfo(tzname))
         except Exception:
             pass
-    return f"{prefix} - {site} | {now.strftime('%d %b %Y | %H:%M %Z')}"
+    return f"{prefix} {now.strftime('%d %b %Y | %H:%M %Z')}"
 
 def build_body(site: str, status: str, duration: str, dashboard_url: str | None):
     status_text = "Success" if status.lower().startswith("s") else "Fail"

@@ -91,7 +91,7 @@ jobs:
           TZ: Asia/Jakarta
         run: |
           python notify_telegram.py --status SUCCESS \
-            --site "https://www.generasimaju.co.id" \
+            --site "https://www.nutriclub.co.id" \
             --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
 
       - name: Kirim Notif Telegram (FAILED)
@@ -103,7 +103,7 @@ jobs:
           TZ: Asia/Jakarta
         run: |
           python notify_telegram.py --status FAILED \
-            --site "https://www.generasimaju.co.id" \
+            --site "https://www.nutriclub.co.id" \
             --dashboard "https://maazway.github.io/pagespeed-monitor-nr"
 
       - name: Send Email Report (SUCCESS)
@@ -129,7 +129,7 @@ jobs:
           )
           echo "Run duration: $DUR seconds"
           python notify_email.py \
-            --site "https://www.generasimaju.co.id" \
+            --site "https://www.nutriclub.co.id" \
             --status "Success" \
             --duration "$DUR" \
             --report "dashboard/index.html" \
@@ -158,7 +158,7 @@ jobs:
           )
           echo "Run duration: $DUR seconds"
           python notify_email.py \
-            --site "https://www.generasimaju.co.id" \
+            --site "https://www.nutriclub.co.id" \
             --status "Fail" \
             --duration "$DUR" \
             --report "dashboard/index.html" \

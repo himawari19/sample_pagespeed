@@ -42,7 +42,7 @@ def main():
     parser.add_argument("--status", required=True, help="SUCCESS or FAILED")
     parser.add_argument("--site", default="https://www.nutriclub.co.id")
     parser.add_argument("--duration", default=None, help="Run duration in seconds")
-    parser.add_argument("--dashboard", default=None, help="Dashboard URL to include")
+    parser.add_argument("--dashboard", default="https://maazway.github.io/pagespeed-monitor-nr")
     parser.add_argument("--extra", default=None, help="Extra note to append")
     args = parser.parse_args()
 
